@@ -6,6 +6,12 @@ interface GridLayoutSelectorProps {
   activeCameraCount?: number;
 }
 
+const layoutOptions = [
+  { value: 1, icon: "crop_square", title: "1 Camera" },
+  { value: 4, icon: "grid_view", title: "4 Camera" },
+  { value: 9, icon: "grid_on", title: "9 Camera" },
+] as const;
+
 export default function GridLayoutSelector({
   currentLayout,
   onLayoutChange,
