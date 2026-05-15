@@ -10,11 +10,14 @@ import { useAuth } from "@/hooks/useAuth";
 
 const adminNavItems = [
   { translationKey: "home", icon: "home", path: "/dashboard", roles: ["admin", "viewer"] },
+  { translationKey: "statistics", icon: "monitoring", path: "/dashboard/statistics", roles: ["admin", "viewer"] },
   { translationKey: "live", icon: "videocam", path: "/dashboard/live", roles: ["admin", "viewer"] },
   { translationKey: "playback", icon: "replay", path: "/dashboard/playback", roles: ["admin", "viewer"] },
   { translationKey: "events", icon: "event_note", path: "/dashboard/events", roles: ["admin", "viewer"] },
+  { translationKey: "snapshots", icon: "photo_library", path: "/dashboard/snapshots", roles: ["admin", "viewer"] },
   { translationKey: "storage", icon: "archive", path: "/dashboard/storage", roles: ["admin", "viewer"] },
   { translationKey: "settings", icon: "settings", path: "/dashboard/settings", roles: ["admin", "viewer"] },
+  { translationKey: "help", icon: "help", path: "/dashboard/help", roles: ["admin", "viewer"] },
   { translationKey: "admin", icon: "group", path: "/dashboard/admin/users", roles: ["admin"] },
 ];
 
