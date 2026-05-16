@@ -1,10 +1,12 @@
 import React from "react";
 
 type BadgeVariant = "primary" | "secondary" | "success" | "warning" | "danger" | "neutral";
+type BadgeSize = "sm" | "md";
 
 interface BadgeProps {
   children: React.ReactNode;
   variant?: BadgeVariant;
+  size?: BadgeSize;
   className?: string;
   icon?: string;
 }
@@ -18,13 +20,25 @@ const variantStyles: Record<BadgeVariant, string> = {
   neutral: "bg-surface-variant text-on-surface-variant",
 };
 
-export default function Badge({ children, variant = "neutral", className = "", icon }: BadgeProps) {
+const sizeStyles: Record<BadgeSize, string> = {
+  sm: "px-2 py-0.5 text-[11px]",
+  md: "px-2.5 py-0.5 text-xs",
+};
+
+export default function Badge({
+  children,
+  variant = "neutral",
+  size = "md",
+  className = "",
+  icon,
+}: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${variantStyles[variant]} ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full font-medium ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
     >
       {icon && (
         <span
+          aria-hidden="true"
           className="material-symbols-outlined"
           style={{ fontSize: "14px", fontVariationSettings: "'FILL' 1" }}
         >

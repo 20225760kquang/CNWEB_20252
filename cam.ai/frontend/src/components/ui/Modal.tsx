@@ -28,6 +28,7 @@ export default function Modal({
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
@@ -37,11 +38,12 @@ export default function Modal({
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
       document.body.style.overflow = "hidden"; // Prevent scrolling behind modal
+      modalRef.current?.focus();
     }
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = previousOverflow;
     };
   }, [isOpen, onClose]);
 
@@ -56,16 +58,22 @@ export default function Modal({
       
       <div
         ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        tabIndex={-1}
         className={`relative bg-surface w-full ${maxWidthClasses[maxWidth]} rounded-3xl shadow-xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/50">
-          <h2 className="text-xl font-semibold text-on-surface">{title}</h2>
+          <h2 id="modal-title" className="text-xl font-semibold text-on-surface">{title}</h2>
           <button
+            type="button"
+            aria-label="Đóng hộp thoại"
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span aria-hidden="true" className="material-symbols-outlined">close</span>
           </button>
         </div>
 
