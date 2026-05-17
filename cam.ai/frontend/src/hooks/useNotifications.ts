@@ -12,6 +12,8 @@ export interface NotificationItem {
   created_at: string | null;
 }
 
+const MAX_VISIBLE_NOTIFICATIONS = 50;
+
 export function useNotifications() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -29,7 +31,9 @@ export function useNotifications() {
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log("[WS] Connected for notifications");
+      if (process.env.NODE_ENV === "development") {
+        console.info("[WS] Connected for notifications");
+      }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
@@ -42,7 +46,7 @@ export function useNotifications() {
         
         // Convert WS event to NotificationItem format
         const newNotif: NotificationItem = {
-          id: "temp-" + Date.now(), // Will be updated on next refresh, or we just trust the DB will have it
+          id: `temp-${data.id || Date.now()}`,
           event_id: data.id,
           camera_name: data.camera_name || "Unknown",
           camera_location: data.camera_location || "",
@@ -53,8 +57,7 @@ export function useNotifications() {
 
         setNotifications((prev) => {
           const updated = [newNotif, ...prev];
-          if (updated.length > 50) return updated.slice(0, 50);
-          return updated;
+          return updated.slice(0, MAX_VISIBLE_NOTIFICATIONS);
         });
         
         setUnreadCount((prev) => prev + 1);
@@ -65,10 +68,10 @@ export function useNotifications() {
     };
 
     ws.onclose = () => {
-      console.log("[WS] Disconnected, attempting reconnect...");
       wsRef.current = null;
-      // Auto reconnect
-      reconnectTimeoutRef.current = setTimeout(connect, 3000);
+      if (!reconnectTimeoutRef.current) {
+        reconnectTimeoutRef.current = setTimeout(connect, 3000);
+      }
     };
 
     ws.onerror = (err) => {
@@ -89,7 +92,7 @@ export function useNotifications() {
       });
       if (res.ok) {
         const data = await res.json();
-        setNotifications(data.notifications || []);
+        setNotifications((data.notifications || []).slice(0, MAX_VISIBLE_NOTIFICATIONS));
         setUnreadCount(data.unread_count || 0);
       }
     } catch (err) {

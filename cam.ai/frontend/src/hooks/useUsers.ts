@@ -9,6 +9,13 @@ import type {
   CameraPermission
 } from "@/types";
 
+const getErrorMessage = (err: unknown, fallback: string) => {
+  if (err && typeof err === "object" && "detail" in err) {
+    return String((err as { detail?: string }).detail || fallback);
+  }
+  return fallback;
+};
+
 export function useUsers() {
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [total, setTotal] = useState(0);
@@ -28,8 +35,8 @@ export function useUsers() {
       const data = await api.get<UserListResponse>(`/api/users?${queryParams.toString()}`);
       setUsers(data.users);
       setTotal(data.total);
-    } catch (err: any) {
-      setError(err.detail || "Không thể tải danh sách người dùng");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Không thể tải danh sách người dùng"));
       throw err;
     } finally {
       setIsLoading(false);
@@ -44,8 +51,8 @@ export function useUsers() {
       setUsers(prev => [newUser, ...prev]);
       setTotal(prev => prev + 1);
       return newUser;
-    } catch (err: any) {
-      setError(err.detail || "Không thể tạo người dùng");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Không thể tạo người dùng"));
       throw err;
     } finally {
       setIsLoading(false);
@@ -59,8 +66,8 @@ export function useUsers() {
       const updatedUser = await api.put<UserResponse>(`/api/users/${id}`, data);
       setUsers(prev => prev.map(u => u.id === id ? updatedUser : u));
       return updatedUser;
-    } catch (err: any) {
-      setError(err.detail || "Không thể cập nhật người dùng");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Không thể cập nhật người dùng"));
       throw err;
     } finally {
       setIsLoading(false);
@@ -73,9 +80,9 @@ export function useUsers() {
     try {
       await api.delete(`/api/users/${id}`);
       setUsers(prev => prev.filter(u => u.id !== id));
-      setTotal(prev => prev - 1);
-    } catch (err: any) {
-      setError(err.detail || "Không thể xóa người dùng");
+      setTotal(prev => Math.max(0, prev - 1));
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Không thể xóa người dùng"));
       throw err;
     } finally {
       setIsLoading(false);
@@ -83,19 +90,11 @@ export function useUsers() {
   };
 
   const getUserDetail = async (id: string) => {
-    try {
-      return await api.get<UserDetailResponse>(`/api/users/${id}`);
-    } catch (err: any) {
-      throw err;
-    }
+    return api.get<UserDetailResponse>(`/api/users/${id}`);
   };
 
   const assignCameras = async (userId: string, cameras: CameraPermission[]) => {
-    try {
-      await api.put(`/api/users/${userId}/cameras`, { cameras });
-    } catch (err: any) {
-      throw err;
-    }
+    await api.put(`/api/users/${userId}/cameras`, { cameras });
   };
 
   return {

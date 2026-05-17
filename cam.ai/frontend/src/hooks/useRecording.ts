@@ -6,6 +6,13 @@ import type {
   PlaybackUrlResponse 
 } from "@/types";
 
+const getErrorMessage = (err: unknown, fallback: string) => {
+  if (err && typeof err === "object" && "detail" in err) {
+    return String((err as { detail?: string }).detail || fallback);
+  }
+  return fallback;
+};
+
 export function useRecording() {
   const [recordings, setRecordings] = useState<RecordingResponse[]>([]);
   const [total, setTotal] = useState(0);
@@ -27,8 +34,8 @@ export function useRecording() {
       const data = await api.get<RecordingListResponse>(url);
       setRecordings(data.recordings);
       setTotal(data.total);
-    } catch (err: any) {
-      setError(err.detail || "Không thể tải danh sách bản ghi");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Không thể tải danh sách bản ghi"));
       throw err;
     } finally {
       setIsLoading(false);
@@ -36,11 +43,7 @@ export function useRecording() {
   }, []);
 
   const getPlaybackUrl = async (recordingId: string) => {
-    try {
-      return await api.get<PlaybackUrlResponse>(`/api/recordings/${recordingId}/playback`);
-    } catch (err: any) {
-      throw err;
-    }
+    return api.get<PlaybackUrlResponse>(`/api/recordings/${recordingId}/playback`);
   };
 
   return {

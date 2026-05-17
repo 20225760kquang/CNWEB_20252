@@ -8,6 +8,13 @@ import type {
   StreamUrlResponse
 } from "@/types";
 
+const getErrorMessage = (err: unknown, fallback: string) => {
+  if (err && typeof err === "object" && "detail" in err) {
+    return String((err as { detail?: string }).detail || fallback);
+  }
+  return fallback;
+};
+
 export function useCamera() {
   const [cameras, setCameras] = useState<CameraResponse[]>([]);
   const [total, setTotal] = useState(0);
@@ -27,8 +34,8 @@ export function useCamera() {
       const data = await api.get<CameraListResponse>(`/api/cameras?${queryParams.toString()}`);
       setCameras(data.cameras);
       setTotal(data.total);
-    } catch (err: any) {
-      setError(err.detail || "Không thể tải danh sách camera");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Không thể tải danh sách camera"));
       throw err;
     } finally {
       setIsLoading(false);
@@ -36,11 +43,7 @@ export function useCamera() {
   }, []);
 
   const getCamera = async (id: string) => {
-    try {
-      return await api.get<CameraResponse>(`/api/cameras/${id}`);
-    } catch (err: any) {
-      throw err;
-    }
+    return api.get<CameraResponse>(`/api/cameras/${id}`);
   };
 
   const createCamera = async (data: CameraCreate) => {
@@ -51,8 +54,8 @@ export function useCamera() {
       setCameras(prev => [newCamera, ...prev]);
       setTotal(prev => prev + 1);
       return newCamera;
-    } catch (err: any) {
-      setError(err.detail || "Không thể thêm camera");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Không thể thêm camera"));
       throw err;
     } finally {
       setIsLoading(false);
@@ -66,8 +69,8 @@ export function useCamera() {
       const updatedCamera = await api.put<CameraResponse>(`/api/cameras/${id}`, data);
       setCameras(prev => prev.map(c => c.id === id ? updatedCamera : c));
       return updatedCamera;
-    } catch (err: any) {
-      setError(err.detail || "Không thể cập nhật camera");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Không thể cập nhật camera"));
       throw err;
     } finally {
       setIsLoading(false);
@@ -80,9 +83,9 @@ export function useCamera() {
     try {
       await api.delete(`/api/cameras/${id}`);
       setCameras(prev => prev.filter(c => c.id !== id));
-      setTotal(prev => prev - 1);
-    } catch (err: any) {
-      setError(err.detail || "Không thể xóa camera");
+      setTotal(prev => Math.max(0, prev - 1));
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Không thể xóa camera"));
       throw err;
     } finally {
       setIsLoading(false);
@@ -90,11 +93,7 @@ export function useCamera() {
   };
 
   const getStreamUrl = async (id: string, quality: "hd" | "sd" = "hd") => {
-    try {
-      return await api.get<StreamUrlResponse>(`/api/cameras/${id}/stream/${quality}`);
-    } catch (err: any) {
-      throw err;
-    }
+    return api.get<StreamUrlResponse>(`/api/cameras/${id}/stream/${quality}`);
   };
 
   return {
