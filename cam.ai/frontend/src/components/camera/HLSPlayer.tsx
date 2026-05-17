@@ -28,6 +28,7 @@ const HLSPlayer = forwardRef<HLSPlayerHandle, HLSPlayerProps>(({
 }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const onTimeUpdateRef = useRef(onTimeUpdate);
   const onDurationRef = useRef(onDuration);
@@ -51,7 +52,10 @@ const HLSPlayer = forwardRef<HLSPlayerHandle, HLSPlayerProps>(({
     const video = videoRef.current;
     if (!video || !playlistUrl) return;
 
-    let hls: Hls;
+    let hls: Hls | null = null;
+    let mediaErrorCount = 0;
+    setError(null);
+    setIsLoading(true);
 
     const handleTimeUpdate = () => {
       if (onTimeUpdateRef.current && video.currentTime) {
@@ -65,11 +69,21 @@ const HLSPlayer = forwardRef<HLSPlayerHandle, HLSPlayerProps>(({
       }
     };
 
+    const playVideo = () => {
+      video.play().catch((e) => {
+        console.warn("Auto-play prevented", e);
+        video.muted = true;
+        video.play().catch((playError) => {
+          console.warn("Muted auto-play failed", playError);
+        });
+      });
+    };
+
     video.addEventListener("timeupdate", handleTimeUpdate);
     video.addEventListener("durationchange", handleDuration);
 
     if (Hls.isSupported()) {
-      hls = new Hls({
+      const hlsInstance = new Hls({
         maxBufferLength: 30,
         maxMaxBufferLength: 60,
         xhrSetup: (xhr, url) => {
@@ -81,56 +95,52 @@ const HLSPlayer = forwardRef<HLSPlayerHandle, HLSPlayerProps>(({
           }
         },
       });
+      hls = hlsInstance;
 
-      hls.loadSource(playlistUrl);
-      hls.attachMedia(video);
+      hlsInstance.loadSource(playlistUrl);
+      hlsInstance.attachMedia(video);
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
         setError(null);
+        setIsLoading(false);
         if (autoPlay) {
-          video.play().catch((e) => {
-            console.warn("Auto-play prevented", e);
-            video.muted = true;
-            video.play().catch(console.error);
-          });
+          playVideo();
         }
       });
 
-      hls.on(Hls.Events.FRAG_BUFFERED, () => {
-        const hlsAny = hls as any;
-        hlsAny.mediaErrorCount = 0;
+      hlsInstance.on(Hls.Events.FRAG_BUFFERED, () => {
+        mediaErrorCount = 0;
       });
 
-      hls.on(Hls.Events.ERROR, (event, data) => {
+      hlsInstance.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
+          setIsLoading(false);
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
               setError("Lỗi mạng khi tải video");
               if (data.response && data.response.code === 401) {
-                setTimeout(() => hls.startLoad(), 2000);
+                setTimeout(() => hlsInstance.startLoad(), 2000);
               } else {
-                hls.startLoad();
+                hlsInstance.startLoad();
               }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
               console.warn("HLS Media Error, attempting recovery...");
-              const hlsAny = hls as any;
-              if (!hlsAny.mediaErrorCount) hlsAny.mediaErrorCount = 0;
-              hlsAny.mediaErrorCount++;
+              mediaErrorCount += 1;
               
-              if (hlsAny.mediaErrorCount === 1) {
-                hls.recoverMediaError();
-              } else if (hlsAny.mediaErrorCount === 2) {
-                hls.swapAudioCodec();
-                hls.recoverMediaError();
+              if (mediaErrorCount === 1) {
+                hlsInstance.recoverMediaError();
+              } else if (mediaErrorCount === 2) {
+                hlsInstance.swapAudioCodec();
+                hlsInstance.recoverMediaError();
               } else {
-                console.error("Cannot recover from media error");
-                hls.destroy();
+                console.warn("Cannot recover from media error");
+                hlsInstance.destroy();
                 setError("Trình duyệt không hỗ trợ định dạng video này (có thể là H.265). Vui lòng cấu hình lại luồng camera sang chuẩn H.264.");
               }
               break;
             default:
-              hls.destroy();
+              hlsInstance.destroy();
               setError("Không thể phát video này");
               break;
           }
@@ -139,10 +149,14 @@ const HLSPlayer = forwardRef<HLSPlayerHandle, HLSPlayerProps>(({
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = playlistUrl;
       video.addEventListener("loadedmetadata", () => {
+        setIsLoading(false);
         if (autoPlay) {
-          video.play().catch(console.error);
+          playVideo();
         }
       });
+    } else {
+      setIsLoading(false);
+      setError("Trình duyệt không hỗ trợ phát HLS.");
     }
 
     return () => {
@@ -165,8 +179,15 @@ const HLSPlayer = forwardRef<HLSPlayerHandle, HLSPlayerProps>(({
       
       {!playlistUrl && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 z-10">
-          <span className="material-symbols-outlined text-4xl mb-2">play_disabled</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-4xl mb-2">play_disabled</span>
           <span className="text-sm">Chưa có nguồn phát</span>
+        </div>
+      )}
+
+      {isLoading && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 bg-black/40 z-10">
+          <span aria-hidden="true" className="material-symbols-outlined animate-spin text-4xl mb-2">progress_activity</span>
+          <span className="text-sm">Đang tải video...</span>
         </div>
       )}
 

@@ -16,6 +16,19 @@ interface ClipExportModalProps {
 }
 
 const MAX_CLIP_SECONDS = 10 * 60;
+const MIN_CLIP_SECONDS = 1;
+const TICK_COUNT = 6;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === "object" && "detail" in err) {
+    return String((err as { detail?: string }).detail || fallback);
+  }
+  return fallback;
+}
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString("vi-VN", {
@@ -96,6 +109,8 @@ export default function ClipExportModal({
 
   const clipDurationSec = (clipEndOff - clipStartOff) / 1000;
   const isTooLong = clipDurationSec > MAX_CLIP_SECONDS;
+  const isTooShort = clipDurationSec < MIN_CLIP_SECONDS;
+  const cannotSubmit = isSubmitting || !recording || isTooLong || isTooShort;
 
   // Document-level pointer move/up handlers (registered only during drag)
   const handleDocPointerMove = useCallback((e: PointerEvent) => {
@@ -108,25 +123,22 @@ export default function ClipExportModal({
     const type = draggingRef.current;
 
     if (type === "start") {
-      let newStart = Math.max(0, dragOriginStartOff.current + dxOff);
       const currentEnd = clipEndRef.current;
-      newStart = Math.min(newStart, currentEnd - 1000);
+      let newStart = clamp(dragOriginStartOff.current + dxOff, 0, currentEnd - 1000);
       if (currentEnd - newStart > MAX_CLIP_SECONDS * 1000) {
         newStart = currentEnd - MAX_CLIP_SECONDS * 1000;
       }
-      setClipStartOff(Math.max(0, newStart));
+      setClipStartOff(clamp(newStart, 0, dur));
     } else if (type === "end") {
-      let newEnd = Math.min(dur, dragOriginEndOff.current + dxOff);
       const currentStart = clipStartRef.current;
-      newEnd = Math.max(newEnd, currentStart + 1000);
+      let newEnd = clamp(dragOriginEndOff.current + dxOff, currentStart + 1000, dur);
       if (newEnd - currentStart > MAX_CLIP_SECONDS * 1000) {
         newEnd = currentStart + MAX_CLIP_SECONDS * 1000;
       }
-      setClipEndOff(Math.min(dur, newEnd));
+      setClipEndOff(clamp(newEnd, 0, dur));
     } else if (type === "range") {
       const rangeDur = dragOriginEndOff.current - dragOriginStartOff.current;
-      let newStart = dragOriginStartOff.current + dxOff;
-      newStart = Math.max(0, Math.min(dur - rangeDur, newStart));
+      const newStart = clamp(dragOriginStartOff.current + dxOff, 0, dur - rangeDur);
       setClipStartOff(newStart);
       setClipEndOff(newStart + rangeDur);
     }
@@ -162,7 +174,7 @@ export default function ClipExportModal({
   }, [handleDocPointerMove, handleDocPointerUp]);
 
   const handleSubmit = async () => {
-    if (!recording) return;
+    if (!recording || cannotSubmit) return;
     setIsSubmitting(true);
     setSubmitMsg(null);
     try {
@@ -172,16 +184,15 @@ export default function ClipExportModal({
         clip_end: new Date(recStart + clipEndOff).toISOString(),
       });
       setSubmitMsg("success");
-    } catch (err: any) {
-      setSubmitMsg(err.detail || "Có lỗi xảy ra khi tạo clip.");
+    } catch (err: unknown) {
+      setSubmitMsg(getErrorMessage(err, "Có lỗi xảy ra khi tạo clip."));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const tickCount = 6;
-  const ticks = Array.from({ length: tickCount + 1 }, (_, i) => {
-    const t = recStart + (recDuration / tickCount) * i;
+  const ticks = Array.from({ length: TICK_COUNT + 1 }, (_, i) => {
+    const t = recStart + (recDuration / TICK_COUNT) * i;
     return new Date(t);
   });
 
@@ -219,7 +230,7 @@ export default function ClipExportModal({
               variant="primary"
               icon="content_cut"
               onClick={handleSubmit}
-              disabled={isSubmitting || !recording || isTooLong}
+              disabled={cannotSubmit}
             >
               {isSubmitting ? "Đang xử lý..." : "Cắt video"}
             </Button>
@@ -260,9 +271,10 @@ export default function ClipExportModal({
           </div>
 
           <div className="text-center">
-            <span className={`text-sm font-medium ${isTooLong ? "text-error" : "text-on-surface-variant"}`}>
+            <span className={`text-sm font-medium ${isTooLong || isTooShort ? "text-error" : "text-on-surface-variant"}`}>
               Thời lượng: {formatDuration(clipDurationSec)}
               {isTooLong && " (vượt quá 10 phút)"}
+              {isTooShort && " (tối thiểu 1 giây)"}
             </span>
           </div>
 
@@ -293,6 +305,11 @@ export default function ClipExportModal({
                   left: `${startPct}%`,
                   width: `${endPct - startPct}%`,
                 }}
+                role="slider"
+                aria-label="Vùng video được chọn"
+                aria-valuemin={0}
+                aria-valuemax={Math.round(recDuration / 1000)}
+                aria-valuenow={Math.round(clipDurationSec)}
                 onPointerDown={(e) => handlePointerDown(e, "range")}
               />
 
@@ -300,6 +317,11 @@ export default function ClipExportModal({
               <div
                 className="absolute top-0 bottom-0 w-5 cursor-ew-resize z-10 flex items-center justify-center group"
                 style={{ left: `calc(${startPct}% - 10px)` }}
+                role="slider"
+                aria-label="Điểm bắt đầu clip"
+                aria-valuemin={0}
+                aria-valuemax={Math.round(recDuration / 1000)}
+                aria-valuenow={Math.round(clipStartOff / 1000)}
                 onPointerDown={(e) => handlePointerDown(e, "start")}
               >
                 <div className="w-1.5 h-8 bg-primary rounded-full shadow-md group-hover:scale-125 transition-transform" />
@@ -309,6 +331,11 @@ export default function ClipExportModal({
               <div
                 className="absolute top-0 bottom-0 w-5 cursor-ew-resize z-10 flex items-center justify-center group"
                 style={{ left: `calc(${endPct}% - 10px)` }}
+                role="slider"
+                aria-label="Điểm kết thúc clip"
+                aria-valuemin={0}
+                aria-valuemax={Math.round(recDuration / 1000)}
+                aria-valuenow={Math.round(clipEndOff / 1000)}
                 onPointerDown={(e) => handlePointerDown(e, "end")}
               >
                 <div className="w-1.5 h-8 bg-primary rounded-full shadow-md group-hover:scale-125 transition-transform" />
@@ -321,7 +348,7 @@ export default function ClipExportModal({
                 <span
                   key={i}
                   className="absolute text-[10px] text-on-surface-variant font-mono -translate-x-1/2"
-                  style={{ left: `${(i / tickCount) * 100}%` }}
+                  style={{ left: `${(i / TICK_COUNT) * 100}%` }}
                 >
                   {formatTime(t)}
                 </span>
