@@ -28,26 +28,23 @@ export default function StatisticsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-primary">Báo cáo hệ thống</p>
-          <h2 className="mt-1 text-2xl font-bold text-on-surface">Tổng quan vận hành camera</h2>
-          <p className="mt-1 text-sm text-on-surface-variant">Theo dõi hiệu suất, dung lượng và sự kiện AI trong một màn hình.</p>
-        </div>
-        <div className="flex rounded-xl bg-surface p-1 shadow-sm ring-1 ring-outline-variant/30">
-          {(["7d", "30d", "90d"] as const).map((item) => (
-            <button
-              key={item}
-              onClick={() => setRange(item)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                range === item ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-variant/50"
-              }`}
-            >
-              {item === "7d" ? "7 ngày" : item === "30d" ? "30 ngày" : "90 ngày"}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Báo cáo hệ thống"
+        title="Tổng quan vận hành camera"
+        description="Theo dõi hiệu suất, dung lượng và sự kiện AI trong một màn hình."
+        actions={
+          <SegmentedControl
+            value={range}
+            onChange={setRange}
+            ariaLabel="Chọn khoảng thời gian thống kê"
+            options={[
+              { value: "7d", label: "7 ngày" },
+              { value: "30d", label: "30 ngày" },
+              { value: "90d", label: "90 ngày" },
+            ]}
+          />
+        }
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
@@ -55,15 +52,15 @@ export default function StatisticsPage() {
           ["person_alert", "Sự kiện AI", "148", "+12.6%", "text-error", "bg-error/10"],
           ["cloud_done", "Thời gian hoạt động", "99.2%", "+0.4%", "text-green-700", "bg-green-100"],
           ["hard_drive", "Dung lượng đã dùng", "1.84 TB", "72% tổng", "text-amber-700", "bg-amber-100"],
-        ].map(([icon, label, value, trend, color, background]) => (
-          <section key={label} className="rounded-2xl bg-surface p-5 shadow-sm ring-1 ring-outline-variant/30">
-            <div className="flex items-start justify-between">
-              <span className={`material-symbols-outlined rounded-xl p-2.5 ${color} ${background}`}>{icon}</span>
-              <span className="text-xs font-semibold text-on-surface-variant">{trend}</span>
-            </div>
-            <p className="mt-5 text-sm text-on-surface-variant">{label}</p>
-            <p className="mt-1 text-2xl font-bold text-on-surface">{value}</p>
-          </section>
+        ].map(([icon, label, value, detail, color, background]) => (
+          <MetricCard
+            key={label}
+            icon={icon}
+            label={label}
+            value={value}
+            detail={detail}
+            iconClassName={`${color} ${background}`}
+          />
         ))}
       </div>
 
