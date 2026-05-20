@@ -7,17 +7,24 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import Link from "next/link";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications, type NotificationItem } from "@/hooks/useNotifications";
 
-const getPageTitle = (pathname: string, t: any) => {
-  if (pathname === "/dashboard") return t('common.dashboardTitle');
-  if (pathname.startsWith("/dashboard/statistics")) return t('common.statisticsTitle');
-  if (pathname.startsWith("/dashboard/live")) return t('common.liveTitle');
-  if (pathname.startsWith("/dashboard/playback")) return t('common.playbackTitle');
-  if (pathname.startsWith("/dashboard/storage")) return t('common.storageTitle');
-  if (pathname.startsWith("/dashboard/settings")) return t('common.settingsTitle');
-  if (pathname.startsWith("/dashboard/admin")) return t('common.adminTitle');
-  if (pathname.startsWith("/dashboard/events")) return t('common.events');
+const pageTitleMap = [
+  { prefix: "/dashboard/statistics", key: "common.statisticsTitle" },
+  { prefix: "/dashboard/live", key: "common.liveTitle" },
+  { prefix: "/dashboard/playback", key: "common.playbackTitle" },
+  { prefix: "/dashboard/storage", key: "common.storageTitle" },
+  { prefix: "/dashboard/settings", key: "common.settingsTitle" },
+  { prefix: "/dashboard/admin", key: "common.adminTitle" },
+  { prefix: "/dashboard/events", key: "common.events" },
+] as const;
+
+const getPageTitle = (pathname: string, t: (key: string) => string) => {
+  if (pathname === "/dashboard") return t("common.dashboardTitle");
+
+  const pageTitle = pageTitleMap.find((item) => pathname.startsWith(item.prefix));
+  if (pageTitle) return t(pageTitle.key);
+
   return "cam.ai";
 };
 
@@ -38,6 +45,7 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [isNotiDropdownOpen, setIsNotiDropdownOpen] = useState(false);
+  const hasUnreadNotifications = unreadCount > 0;
 
   const notiRef = useRef<HTMLDivElement>(null);
   const langRef = useRef<HTMLDivElement>(null);
@@ -59,7 +67,7 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleNotiClick = (notif: any) => {
+  const handleNotiClick = (notif: NotificationItem) => {
     if (!notif.is_read) {
       markAsRead(notif.id);
     }
@@ -75,7 +83,7 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
           <Image src={logoImg} alt="cam.ai logo" className="h-10 w-auto object-contain" priority />
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={onMenuClick} className="material-symbols-outlined text-gray-500 p-1 hover:bg-surface-variant rounded-full transition-colors">menu</button>
+          <button type="button" aria-label="Mở menu" onClick={onMenuClick} className="material-symbols-outlined text-gray-500 p-1 hover:bg-surface-variant rounded-full transition-colors">menu</button>
         </div>
       </header>
 
@@ -86,26 +94,30 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
         <div className="flex items-center gap-6">
           {/* Notifications */}
           <div className="relative" ref={notiRef}>
-            <div 
+            <button
+              type="button"
+              aria-label="Mở thông báo"
+              aria-expanded={isNotiDropdownOpen}
               className="cursor-pointer relative"
               onClick={() => setIsNotiDropdownOpen(!isNotiDropdownOpen)}
             >
               <span className="material-symbols-outlined text-gray-500 hover:text-gray-900 transition-colors">
                 notifications
               </span>
-              {unreadCount > 0 && (
+              {hasUnreadNotifications && (
                 <span className="absolute -top-1 -right-1 bg-error text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center border-2 border-white">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
-            </div>
+            </button>
             
             {isNotiDropdownOpen && (
               <div className="absolute right-0 mt-2 w-80 max-h-[400px] overflow-y-auto bg-surface rounded-xl shadow-xl border border-outline-variant/30 py-2 z-50 flex flex-col">
                 <div className="flex justify-between items-center px-4 py-2 border-b border-outline-variant/20 sticky top-0 bg-surface/90 backdrop-blur-sm z-10">
                   <span className="font-semibold text-gray-900">{t('common.notifications') || 'Thông báo'}</span>
-                  {unreadCount > 0 && (
+                  {hasUnreadNotifications && (
                     <button 
+                      type="button"
                       onClick={markAllAsRead}
                       className="text-xs text-primary hover:underline font-medium"
                     >
@@ -121,10 +133,11 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                     </div>
                   ) : (
                     notifications.map(notif => (
-                      <div 
+                      <button
+                        type="button"
                         key={notif.id}
                         onClick={() => handleNotiClick(notif)}
-                        className={`px-4 py-3 border-b border-outline-variant/10 cursor-pointer transition-colors hover:bg-surface-variant/30 ${!notif.is_read ? 'bg-primary/5' : ''}`}
+                        className={`w-full text-left px-4 py-3 border-b border-outline-variant/10 cursor-pointer transition-colors hover:bg-surface-variant/30 ${!notif.is_read ? 'bg-primary/5' : ''}`}
                       >
                         <div className="flex gap-3">
                           <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${!notif.is_read ? 'bg-primary' : 'bg-transparent'}`}></div>
@@ -138,7 +151,7 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     ))
                   )}
                 </div>
@@ -148,7 +161,10 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
 
           {/* Language Switcher */}
           <div className="relative border-l border-outline-variant/30 pl-6" ref={langRef}>
-            <div 
+            <button
+              type="button"
+              aria-label="Đổi ngôn ngữ"
+              aria-expanded={isLangDropdownOpen}
               className="flex items-center gap-2 cursor-pointer"
               onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
             >
@@ -170,11 +186,12 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                 </>
               )}
               <span className="material-symbols-outlined text-gray-400 text-sm">expand_more</span>
-            </div>
+            </button>
 
             {isLangDropdownOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-surface rounded-xl shadow-lg border border-outline-variant/20 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
                 <button 
+                  type="button"
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-surface-variant transition-colors flex items-center gap-2"
                   onClick={() => {
                     i18n.changeLanguage("vi");
@@ -184,6 +201,7 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                   Tiếng Việt
                 </button>
                 <button 
+                  type="button"
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-surface-variant transition-colors flex items-center gap-2"
                   onClick={() => {
                     i18n.changeLanguage("en");
@@ -198,7 +216,10 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
 
           {/* User Profile Dropdown */}
           <div className="relative border-l border-outline-variant/30 pl-6 ml-2" ref={profileRef}>
-            <div 
+            <button
+              type="button"
+              aria-label="Mở menu tài khoản"
+              aria-expanded={isDropdownOpen}
               className="flex items-center gap-2 cursor-pointer"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
@@ -216,7 +237,7 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
               <span className="material-symbols-outlined text-gray-400 text-sm">
                 expand_more
               </span>
-            </div>
+            </button>
 
             {/* Dropdown Menu */}
             {isDropdownOpen && (
@@ -231,6 +252,7 @@ export default function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                 </Link>
                 <div className="h-px bg-outline-variant/20 my-1"></div>
                 <button 
+                  type="button"
                   className="w-full text-left px-4 py-2 text-sm text-error hover:bg-error/5 transition-colors flex items-center gap-2"
                   onClick={() => {
                     setIsDropdownOpen(false);
