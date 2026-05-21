@@ -4,22 +4,24 @@ import React, { useEffect, useState } from "react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { AIEvent } from "@/types";
 
+const TOAST_LIMIT = 3;
+const TOAST_TIMEOUT_MS = 5000;
+
 function Toast({ event, onClose }: { event: AIEvent; onClose: () => void }) {
-  // Tự động ẩn sau 5 giây
   useEffect(() => {
-    const t = setTimeout(onClose, 5000);
+    const t = setTimeout(onClose, TOAST_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, [onClose]);
 
   return (
-    <div className="bg-surface border border-error/30 shadow-xl rounded-xl p-4 w-80 mb-3 animate-in slide-in-from-right-8 fade-in flex flex-col gap-3">
+    <div role="status" className="bg-surface border border-error/30 shadow-xl rounded-xl p-4 w-80 mb-3 animate-in slide-in-from-right-8 fade-in flex flex-col gap-3">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2 text-error">
-          <span className="material-symbols-outlined">warning</span>
+          <span aria-hidden="true" className="material-symbols-outlined">warning</span>
           <h4 className="font-bold">Phát hiện đối tượng</h4>
         </div>
-        <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface">
-          <span className="material-symbols-outlined text-sm">close</span>
+        <button type="button" aria-label="Đóng thông báo" onClick={onClose} className="text-on-surface-variant hover:text-on-surface">
+          <span aria-hidden="true" className="material-symbols-outlined text-sm">close</span>
         </button>
       </div>
       
@@ -50,11 +52,10 @@ export default function NotificationToastManager() {
   const [visibleEvents, setVisibleEvents] = useState<AIEvent[]>([]);
   const [lastEventId, setLastEventId] = useState<string | null>(null);
 
-  // Khi có event mới, thêm vào danh sách hiển thị
   useEffect(() => {
     if (latestEvent && latestEvent.id !== lastEventId) {
       setLastEventId(latestEvent.id);
-      setVisibleEvents((prev) => [latestEvent, ...prev].slice(0, 3)); // Hiện tối đa 3 popup cùng lúc
+      setVisibleEvents((prev) => [latestEvent, ...prev].slice(0, TOAST_LIMIT));
     }
   }, [latestEvent, lastEventId]);
 
