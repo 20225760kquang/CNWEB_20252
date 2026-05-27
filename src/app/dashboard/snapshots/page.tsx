@@ -2,6 +2,10 @@
 
 import React, { useMemo, useState } from "react";
 import offlineCamera from "@/assets/offline_camera.webp";
+import PageHeader from "@/components/ui/PageHeader";
+import SegmentedControl from "@/components/ui/SegmentedControl";
+
+type SnapshotSource = "Tất cả" | "Trực tiếp" | "Xem lại" | "Sự kiện AI";
 
 const snapshots = [
   { id: 1, camera: "Sảnh chính", source: "Trực tiếp", time: "Hôm nay, 10:42", tag: "Đã đánh dấu" },
@@ -14,7 +18,7 @@ const snapshots = [
 
 export default function SnapshotsPage() {
   const [query, setQuery] = useState("");
-  const [source, setSource] = useState("Tất cả");
+  const [source, setSource] = useState<SnapshotSource>("Tất cả");
   const [selected, setSelected] = useState<(typeof snapshots)[number] | null>(null);
   const filtered = useMemo(
     () => snapshots.filter((item) => item.camera.toLowerCase().includes(query.toLowerCase()) && (source === "Tất cả" || item.source === source)),
@@ -23,22 +27,28 @@ export default function SnapshotsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div>
-        <p className="text-sm font-semibold text-primary">Kho hình ảnh</p>
-        <h2 className="mt-1 text-2xl font-bold text-on-surface">Ảnh chụp từ camera</h2>
-        <p className="mt-1 text-sm text-on-surface-variant">Tìm kiếm và quản lý ảnh chụp từ xem trực tiếp, xem lại và sự kiện AI.</p>
-      </div>
+      <PageHeader
+        eyebrow="Kho hình ảnh"
+        title="Ảnh chụp từ camera"
+        description="Tìm kiếm và quản lý ảnh chụp từ xem trực tiếp, xem lại và sự kiện AI."
+      />
 
       <div className="flex flex-col gap-3 rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-outline-variant/30 md:flex-row">
         <label className="flex flex-1 items-center gap-3 rounded-xl bg-surface-variant/40 px-4">
           <span className="material-symbols-outlined text-on-surface-variant">search</span>
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm theo tên camera..." className="w-full bg-transparent py-3 text-sm outline-none" />
         </label>
-        <div className="flex gap-2 overflow-x-auto">
-          {["Tất cả", "Trực tiếp", "Xem lại", "Sự kiện AI"].map((item) => (
-            <button key={item} onClick={() => setSource(item)} className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold ${source === item ? "bg-primary text-on-primary" : "bg-surface-variant/50 text-on-surface-variant"}`}>{item}</button>
-          ))}
-        </div>
+        <SegmentedControl
+          value={source}
+          onChange={setSource}
+          ariaLabel="Lọc ảnh theo nguồn"
+          options={[
+            { value: "Tất cả", label: "Tất cả" },
+            { value: "Trực tiếp", label: "Trực tiếp" },
+            { value: "Xem lại", label: "Xem lại" },
+            { value: "Sự kiện AI", label: "Sự kiện AI" },
+          ]}
+        />
       </div>
 
       <div className="flex items-center justify-between">
