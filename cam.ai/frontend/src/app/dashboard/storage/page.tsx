@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, API_BASE_URL } from "@/lib/api";
 import Badge from "@/components/ui/Badge";
 import Pagination from "@/components/ui/Pagination";
@@ -22,6 +22,21 @@ interface ClipsResponse {
   total: number;
 }
 
+const PAGE_LIMIT = 10;
+
+const statusMeta: Record<ClipExport["status"], { label: string; variant: "success" | "warning" | "danger"; icon?: string }> = {
+  ready: { label: "Sẵn sàng", variant: "success" },
+  processing: { label: "Đang xử lý...", variant: "warning", icon: "sync" },
+  expired: { label: "Lỗi/Hết hạn", variant: "danger" },
+};
+
+const getErrorMessage = (err: unknown, fallback: string) => {
+  if (err && typeof err === "object" && "detail" in err) {
+    return String((err as { detail?: string }).detail || fallback);
+  }
+  return fallback;
+};
+
 export default function StoragePage() {
   const [clips, setClips] = useState<ClipExport[]>([]);
   const [total, setTotal] = useState(0);
@@ -30,7 +45,6 @@ export default function StoragePage() {
   const hasProcessing = useRef(false);
 
   const [page, setPage] = useState(1);
-  const limit = 10;
 
   // Modals state
   const [deleteClipId, setDeleteClipId] = useState<string | null>(null);
@@ -40,47 +54,47 @@ export default function StoragePage() {
   // Authentication token for direct download endpoint
   const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : "";
 
-  const getDownloadUrl = (clipId: string) => {
+  const getDownloadUrl = useCallback((clipId: string) => {
     return `${API_BASE_URL}/api/clips/${clipId}/download?token=${token}`;
-  };
+  }, [token]);
 
-  const fetchClips = async (pageIndex: number) => {
+  const fetchClips = useCallback(async (pageIndex: number) => {
     setIsLoading(true);
     setError("");
     try {
-      const skip = (pageIndex - 1) * limit;
-      const res = await api.get<ClipsResponse>(`/api/clips?skip=${skip}&limit=${limit}`);
+      const skip = (pageIndex - 1) * PAGE_LIMIT;
+      const res = await api.get<ClipsResponse>(`/api/clips?skip=${skip}&limit=${PAGE_LIMIT}`);
       setClips(res.clips);
       setTotal(res.total);
       hasProcessing.current = res.clips.some(c => c.status === "processing");
-    } catch (err: any) {
-      setError(err.detail || "Không thể tải danh sách video đã lưu.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Không thể tải danh sách video đã lưu."));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const handleDeleteClick = (clipId: string) => {
     setDeleteClipId(clipId);
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!deleteClipId) return;
     setIsDeleting(true);
     try {
       await api.delete(`/api/clips/${deleteClipId}`);
       setDeleteClipId(null);
       fetchClips(page);
-    } catch (err: any) {
-      setErrorModalMessage(err.detail || "Không thể xóa video.");
+    } catch (err: unknown) {
+      setErrorModalMessage(getErrorMessage(err, "Không thể xóa video."));
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [deleteClipId, fetchClips, page]);
 
   useEffect(() => {
     fetchClips(page);
-  }, [page]);
+  }, [fetchClips, page]);
 
   // Auto-refresh only when there are processing clips
   useEffect(() => {
@@ -90,9 +104,13 @@ export default function StoragePage() {
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [page]);
+  }, [fetchClips, page]);
 
-  const totalPages = Math.ceil(total / limit) || 1;
+  const totalPages = Math.ceil(total / PAGE_LIMIT) || 1;
+  const selectedClip = useMemo(
+    () => clips.find((clip) => clip.id === deleteClipId),
+    [clips, deleteClipId]
+  );
 
   const getDuration = (start: string, end: string) => {
     const s = new Date(start).getTime();
@@ -161,8 +179,8 @@ export default function StoragePage() {
                       </td>
                       <td className="py-3 px-6 font-mono text-sm text-on-surface-variant">{getDuration(item.clip_start, item.clip_end)}</td>
                       <td className="py-3 px-6">
-                        <Badge variant={item.status === "ready" ? "success" : item.status === "processing" ? "warning" : "danger"} icon={item.status === "processing" ? "sync" : undefined}>
-                          {item.status === "ready" ? "Sẵn sàng" : item.status === "processing" ? "Đang xử lý..." : "Lỗi/Hết hạn"}
+                        <Badge variant={statusMeta[item.status].variant} icon={statusMeta[item.status].icon}>
+                          {statusMeta[item.status].label}
                         </Badge>
                       </td>
                       <td className="py-3 px-6">
@@ -177,11 +195,12 @@ export default function StoragePage() {
                               <span className="material-symbols-outlined text-[18px]">download</span>
                             </a>
                           ) : (
-                            <button className="p-2 rounded-full text-on-surface-variant/50 cursor-not-allowed flex items-center" disabled>
+                            <button type="button" aria-label="Video chưa sẵn sàng để tải" className="p-2 rounded-full text-on-surface-variant/50 cursor-not-allowed flex items-center" disabled>
                               <span className="material-symbols-outlined text-[18px]">download</span>
                             </button>
                           )}
                           <button
+                            type="button"
                             onClick={() => handleDeleteClick(item.id)}
                             className="p-2 rounded-full hover:bg-error/10 text-error/70 hover:text-error transition-colors flex items-center"
                             title="Xóa video"
@@ -197,7 +216,7 @@ export default function StoragePage() {
             </div>
           </div>
 
-          {total > limit && (
+          {total > PAGE_LIMIT && (
             <div className="flex justify-end">
               <Pagination
                 currentPage={page}
@@ -234,7 +253,7 @@ export default function StoragePage() {
         }
       >
         <p className="text-on-surface-variant text-sm">
-          Bạn có chắc chắn muốn xóa video này không? Thao tác này sẽ xóa tệp vĩnh viễn khỏi lưu trữ đám mây và không thể khôi phục lại.
+          Bạn có chắc chắn muốn xóa video {selectedClip ? `"${selectedClip.camera_name}"` : "này"} không? Thao tác này sẽ xóa tệp vĩnh viễn khỏi lưu trữ đám mây và không thể khôi phục lại.
         </p>
       </Modal>
 

@@ -8,17 +8,15 @@ import HLSPlayer from "@/components/camera/HLSPlayer";
 import type { HLSPlayerHandle } from "@/components/camera/HLSPlayer";
 import Timeline from "@/components/camera/Timeline";
 import ClipExportModal from "@/components/camera/ClipExportModal";
-import { useTranslation } from "react-i18next";
 
 export default function PlaybackIndexPage() {
-  const { t } = useTranslation();
   const { cameras, fetchCameras } = useCamera();
   const { recordings, fetchRecordings, isLoading: isLoadingRecordings } = useRecording();
 
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [currentRecordingId, setCurrentRecordingId] = useState<string | null>(null);
   const [playbackTime, setPlaybackTime] = useState<Date | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [seekTarget, setSeekTarget] = useState<number | undefined>(undefined);
 
   // Clip export modal state
   const [isClipModalOpen, setIsClipModalOpen] = useState(false);
@@ -47,6 +45,12 @@ export default function PlaybackIndexPage() {
     link.click();
   }, [cameras, selectedCameraId]);
 
+  const resetPlayback = useCallback(() => {
+    setCurrentRecordingId(null);
+    setPlaybackTime(null);
+    setSeekTarget(undefined);
+  }, []);
+
   // Load cameras on mount
   useEffect(() => {
     fetchCameras(0, 100, "");
@@ -61,21 +65,21 @@ export default function PlaybackIndexPage() {
 
   // Fetch recordings when camera changes and auto-refresh
   useEffect(() => {
-    if (selectedCameraId) {
-      fetchRecordings(selectedCameraId, 0, 100);
-      setCurrentRecordingId(null);
-      setPlaybackTime(null);
-
-      // Auto refresh every 30 seconds to fetch new recording status
-      const interval = setInterval(() => {
-        fetchRecordings(selectedCameraId, 0, 100);
-      }, 30000);
-
-      return () => clearInterval(interval);
+    if (!selectedCameraId) {
+      fetchRecordings(undefined, 0, 100);
+      resetPlayback();
+      return;
     }
-  }, [selectedCameraId, fetchRecordings]);
 
-  const [seekTarget, setSeekTarget] = useState<number | undefined>(undefined);
+    fetchRecordings(selectedCameraId, 0, 100);
+    resetPlayback();
+
+    const interval = setInterval(() => {
+      fetchRecordings(selectedCameraId, 0, 100);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [selectedCameraId, fetchRecordings, resetPlayback]);
 
   // Handle timeline seek
   const handleSeek = (time: Date, recordingId: string | null) => {
@@ -110,6 +114,7 @@ export default function PlaybackIndexPage() {
 
   const currentRecording = currentRecordingId ? recordings.find(r => r.id === currentRecordingId) || null : null;
   const selectedCamera = cameras.find(c => c.id === selectedCameraId);
+  const canExportClip = Boolean(currentRecordingId);
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] animate-in fade-in duration-300 gap-6">
@@ -120,10 +125,11 @@ export default function PlaybackIndexPage() {
         <div className="flex items-center gap-3">
           {/* Clip export button */}
           <button
+            type="button"
             onClick={() => setIsClipModalOpen(true)}
-            disabled={!currentRecordingId}
+            disabled={!canExportClip}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-              currentRecordingId
+              canExportClip
                 ? "bg-primary/10 text-primary hover:bg-primary/20 border border-primary/30"
                 : "bg-surface-variant/30 text-on-surface-variant/50 cursor-not-allowed border border-outline-variant/30"
             }`}
@@ -135,10 +141,11 @@ export default function PlaybackIndexPage() {
 
           {/* Snapshot button */}
           <button
+            type="button"
             onClick={captureSnapshot}
-            disabled={!currentRecordingId}
+            disabled={!canExportClip}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-              currentRecordingId
+              canExportClip
                 ? "bg-surface-variant/40 text-on-surface hover:bg-surface-variant/60 border border-outline-variant/50"
                 : "bg-surface-variant/30 text-on-surface-variant/50 cursor-not-allowed border border-outline-variant/30"
             }`}
@@ -153,7 +160,10 @@ export default function PlaybackIndexPage() {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-sm">search</span>
             <select 
               value={selectedCameraId}
-              onChange={(e) => setSelectedCameraId(e.target.value)}
+              onChange={(e) => {
+                setSelectedCameraId(e.target.value);
+                resetPlayback();
+              }}
               className="w-full pl-9 pr-10 py-2 bg-surface-variant/20 text-sm rounded-xl border border-outline-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/50 text-on-surface appearance-none cursor-pointer"
             >
               <option value="" disabled>Tìm kiếm camera...</option>
@@ -179,8 +189,10 @@ export default function PlaybackIndexPage() {
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50">
-            <span className="material-symbols-outlined text-6xl mb-4 opacity-50">history</span>
-            <p>Chọn một mốc thời gian trên thước để xem lại</p>
+            <span aria-hidden="true" className="material-symbols-outlined text-6xl mb-4 opacity-50">
+              {isLoadingRecordings ? "progress_activity" : "history"}
+            </span>
+            <p>{isLoadingRecordings ? "Đang tải bản ghi..." : "Chọn một mốc thời gian trên thước để xem lại"}</p>
           </div>
         )}
       </div>
