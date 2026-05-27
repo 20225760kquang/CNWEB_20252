@@ -8,6 +8,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
   icon?: string;
   isLoading?: boolean;
+  fullWidth?: boolean;
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
@@ -30,23 +31,29 @@ export default function Button({
   size = "md",
   icon,
   isLoading,
+  fullWidth = false,
   className = "",
   disabled,
+  type = "button",
   ...props
 }: ButtonProps) {
+  const iconName = isLoading ? "progress_activity" : icon;
+
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      type={type}
+      aria-busy={isLoading || undefined}
+      className={`inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${fullWidth ? "w-full" : ""} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >
-      {isLoading ? (
-        <span className="material-symbols-outlined animate-spin" style={{ fontSize: "20px" }}>
-          progress_activity
-        </span>
-      ) : icon ? (
-        <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
-          {icon}
+      {iconName ? (
+        <span
+          aria-hidden="true"
+          className={`material-symbols-outlined ${isLoading ? "animate-spin" : ""}`}
+          style={{ fontSize: "20px" }}
+        >
+          {iconName}
         </span>
       ) : null}
       {children}
