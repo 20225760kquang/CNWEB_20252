@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import MetricCard from "@/components/ui/MetricCard";
+import PageHeader from "@/components/ui/PageHeader";
+import SegmentedControl from "@/components/ui/SegmentedControl";
 
 const chartData = {
   "7d": [42, 56, 48, 73, 64, 89, 76],
