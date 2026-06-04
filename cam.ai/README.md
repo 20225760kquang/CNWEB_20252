@@ -1,4 +1,5 @@
-# cam.ai — Video Management System
+## Cam.ai — Video Management System
+# Hệ thống quản lý camera: live stream (WebRTC), xem lại (HLS), ghi hình, AI phát hiện người (YOLOv8n).
 
 ## Thành viên nhóm
 
@@ -7,8 +8,6 @@
 | Nguyễn Khắc Quang | 20225760 |
 | Seng Saikchhun | 20239708 |
 | Chu Đình Sơn | 20215636 |
-
-Hệ thống quản lý camera: live stream (WebRTC), xem lại (HLS), ghi hình, AI phát hiện người (YOLOv8n).
 
 ## Yêu cầu
 
