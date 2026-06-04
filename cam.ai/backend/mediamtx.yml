@@ -1,0 +1,57 @@
+###############################################
+# Global settings
+
+# Bật API Server của MediaMTX (cho phép backend POST/DELETE path)
+api: yes
+apiAddress: :9997
+
+# Cấu hình xác thực: dùng internal, cho phép tất cả (không cần password)
+authMethod: internal
+
+authInternalUsers:
+  - user: any
+    ips: []
+    permissions:
+      - action: api
+      - action: read
+      - action: publish
+      - action: playback
+      - action: metrics
+      - action: pprof
+
+# Cho phép prometheus metrics (tùy chọn)
+metrics: no
+
+###############################################
+# RTSP settings
+rtspAddress: :8554
+rtpAddress: :8000
+rtcpAddress: :8001
+
+###############################################
+# WebRTC settings
+webrtcAddress: :8889
+webrtcICEHostNAT1To1IPs:
+  - 100.122.3.35
+
+###############################################
+# Path settings
+# Các path sẽ được tạo tự động thông qua API
+paths:
+  # Khi client yêu cầu xem path có đuôi _264 (ví dụ: cam_xxx_hd_264)
+  # MediaMTX sẽ tự động chạy FFmpeg kéo luồng từ path gốc (cam_xxx_hd),
+  # transcode sang H.264 và đẩy ngược lại vào path _264.
+  ~^(cam_.*)_264$:
+    runOnDemand: >-
+      ffmpeg
+      -rtsp_transport tcp
+      -i rtsp://127.0.0.1:8554/$G1
+      -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1500k
+      -c:a aac -b:a 64k
+      -f rtsp rtsp://127.0.0.1:8554/$MTX_PATH
+    runOnDemandRestart: yes
+    runOnDemandStartTimeout: 15s
+    runOnDemandCloseAfter: 10s
+
+  all_others:
+    # Không cấu hình default source, chỉ proxy theo yêu cầu
