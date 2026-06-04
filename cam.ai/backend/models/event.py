@@ -39,6 +39,7 @@ class Event(Base):
         Enum(EventType, name="event_type_enum", create_constraint=True),
         nullable=False,
     )
+    # Lưu trữ ảnh chụp màn hình khi phát hiện con người, đẩy lên MinIO
     snapshot_minio_key: Mapped[str | None] = mapped_column(
         String(500), nullable=True
     )

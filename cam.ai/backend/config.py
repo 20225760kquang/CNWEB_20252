@@ -33,14 +33,24 @@ class Settings(BaseSettings):
     MINIO_BUCKET_RECORDINGS: str = "recordings"
     MINIO_BUCKET_SNAPSHOTS: str = "snapshots"
 
+    MINIO_SECURE: bool = False  # True nếu MinIO dùng HTTPS
+
     # ── MediaMTX (Sprint 2+) ─────────────────────────────────
     MEDIAMTX_API_URL: str = "http://localhost:9997"
     MEDIAMTX_WEBRTC_URL: str = "http://localhost:8889"
+
+    # ── Recording Pipeline (Sprint 3) ────────────────────────
+    RECORDING_LOCAL_DIR: str = "./recordings_temp"
+    RECORDING_SEGMENT_DURATION: int = 10         # giây / segment
+    RECORDING_RETENTION_HOURS: int = 6           # xóa data cũ hơn 6h
+    RECORDING_ROTATE_MINUTES: int = 60           # tạo recording mới mỗi 1h
+    RECORDING_SYNC_INTERVAL: int = 10            # sync lên MinIO mỗi 10 giây
 
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "case_sensitive": True,
+        "extra": "ignore",
     }
 
 

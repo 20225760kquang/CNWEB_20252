@@ -9,6 +9,9 @@ from models.recording import Recording, RecordingStatus
 from models.event import Event, EventType
 from models.snapshot import Snapshot
 from models.clip_export import ClipExport, ExportStatus
+from models.blacklisted_token import BlacklistedToken
+from models.audit_log import AuditLog
+from models.notification import Notification
 
 __all__ = [
     "User", "UserRole",
@@ -18,4 +21,7 @@ __all__ = [
     "Event", "EventType",
     "Snapshot",
     "ClipExport", "ExportStatus",
+    "BlacklistedToken",
+    "AuditLog",
+    "Notification",
 ]

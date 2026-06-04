@@ -14,3 +14,8 @@ from schemas.camera import (
     CameraCreate, CameraUpdate,
     CameraResponse, CameraListResponse, StreamUrlResponse,
 )
+from schemas.recording import (
+    RecordingResponse, RecordingListResponse,
+    PlaybackUrlResponse, RecordingStatusResponse,
+)
+

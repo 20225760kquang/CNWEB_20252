@@ -15,6 +15,11 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
 class UserBrief(BaseModel):
     id: UUID
     username: str

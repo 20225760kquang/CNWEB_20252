@@ -7,7 +7,7 @@ import uuid
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import String, Boolean, Enum, func
+from sqlalchemy import String, Boolean, Enum, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -51,6 +51,9 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+    last_login_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # ── Relationships ─────────────────────────────────────────
     camera_access = relationship(
@@ -61,6 +64,9 @@ class User(Base):
     )
     clip_exports = relationship(
         "ClipExport", back_populates="user"
+    )
+    notifications = relationship(
+        "Notification", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:

@@ -33,17 +33,31 @@ router = APIRouter(prefix="/api/users", tags=["User Management"])
 async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    search: str = Query(None, description="Search by username or email"), # tra cứu trên thanh tìm kiếm 
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """List all users with pagination (Admin only)."""
+    # Build query
+    query = select(User)
+    if search:
+        search_term = f"%{search}%"
+        query = query.where(
+            (User.username.ilike(search_term)) | (User.email.ilike(search_term))
+        )
+
     # Count total
-    count_result = await db.execute(select(func.count(User.id)))
+    count_query = select(func.count(User.id))
+    if search:
+        count_query = count_query.where(
+            (User.username.ilike(search_term)) | (User.email.ilike(search_term))
+        )
+    count_result = await db.execute(count_query)
     total = count_result.scalar()
 
     # Fetch users
     result = await db.execute(
-        select(User).order_by(User.created_at.desc()).offset(skip).limit(limit)
+        query.order_by(User.created_at.desc()).offset(skip).limit(limit)
     )
     users = result.scalars().all()
 

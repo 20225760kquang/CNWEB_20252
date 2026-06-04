@@ -73,8 +73,8 @@ def decode_token(token: str) -> dict:
 
 
 # ── OAuth2 Scheme ─────────────────────────────────────────────
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/swagger-login")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 # ── FastAPI Dependencies ──────────────────────────────────────
 
@@ -84,8 +84,17 @@ async def get_current_user(
 ) -> User:
     """
     Decode JWT access token and return the corresponding User.
-    Raises 401 if token invalid or user not found.
+    Raises 401 if token invalid, expired, or blacklisted.
     """
+    from models.blacklisted_token import BlacklistedToken
+    result = await db.execute(select(BlacklistedToken).where(BlacklistedToken.token == token))
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been blacklisted / logged out",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     payload = decode_token(token)
 
     if payload.get("type") != "access":
@@ -94,6 +103,7 @@ async def get_current_user(
             detail="Invalid token type",
         )
 
+    # Trường sub chứa thông tin id của user (phục vụ mục đích định danh)
     user_id_str = payload.get("sub")
     if not user_id_str:
         raise HTTPException(

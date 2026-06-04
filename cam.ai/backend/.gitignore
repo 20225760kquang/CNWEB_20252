@@ -20,3 +20,9 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Recording temp files (Sprint 3)
+recordings_temp/
+
+# YOLO models cache
+yolov8n.pt

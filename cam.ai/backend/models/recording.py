@@ -43,6 +43,7 @@ class Recording(Base):
     end_time: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
+    # bucket hiểu như collection của MongoDB, playlist là nơi chứa các key của các phân đoạn video, có thể lấy key để ghép lại hoặc tải về
     minio_bucket: Mapped[str] = mapped_column(
         String(100), default="recordings"
     )
