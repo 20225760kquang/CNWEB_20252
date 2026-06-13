@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-fixed-dim: #cfbcff;
+  --color-on-error: #ffffff;
+  --color-on-tertiary-fixed-variant: #594400;
+  --color-background: #fdf7ff;
+  --color-tertiary-container: #c9a74d;
+  --color-surface-container-low: #f8f2fa;
+  --color-secondary-fixed: #e9ddff;
+  --color-surface-tint: #6750a4;
+  --color-surface-container: #f2ecf4;
+  --color-tertiary-fixed: #ffdf93;
+  --color-tertiary: #765b00;
+  --color-surface: #fdf7ff;
+  --color-tertiary-fixed-dim: #e7c365;
+  --color-on-error-container: #93000a;
+  --color-on-secondary-fixed-variant: #4b4263;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-secondary-fixed: #1f1635;
+  --color-on-primary-fixed: #22005d;
+  --color-secondary-fixed-dim: #cdc0e9;
+  --color-primary-container: #6750a4;
+  --color-error: #ba1a1a;
+  --color-secondary-container: #e1d4fd;
+  --color-surface-variant: #e6e0e9;
+  --color-on-primary-container: #e0d2ff;
+  --color-on-tertiary-fixed: #241a00;
+  --color-on-surface: #1d1b20;
+  --color-on-surface-variant: #494551;
+  --color-error-container: #ffdad6;
+  --color-inverse-surface: #322f35;
+  --color-on-primary-fixed-variant: #4f378a;
+  --color-inverse-primary: #cfbcff;
+  --color-surface-dim: #ded8e0;
+  --color-primary-fixed: #e9ddff;
+  --color-on-secondary-container: #645a7d;
+  --color-on-background: #1d1b20;
+  --color-surface-container-high: #ece6ee;
+  --color-outline-variant: #cbc4d2;
+  --color-outline: #7a7582;
+  --color-on-secondary: #ffffff;
+  --color-primary: #4f378a;
+  --color-surface-bright: #fdf7ff;
+  --color-inverse-on-surface: #f5eff7;
+  --color-on-tertiary: #ffffff;
+  --color-on-primary: #ffffff;
+  --color-on-tertiary-container: #503d00;
+  --color-surface-container-highest: #e6e0e9;
+  --color-secondary: #63597c;
+  --color-accent-orange: #FF5722;
+  
+  --spacing-panel_padding: 24px;
+  --spacing-grid_gutter: 16px;
+  --spacing-sidebar_width: 280px;
+  --spacing-container_margin: 32px;
+  --spacing-base_unit: 4px;
+
+  --radius-DEFAULT: 1rem;
+  --radius-lg: 2rem;
+  --radius-xl: 3rem;
+  --radius-full: 9999px;
+
+  --font-sans: var(--font-be-vietnam-pro), sans-serif;
+  --font-body-lg: var(--font-be-vietnam-pro), sans-serif;
+  --font-label-sm: var(--font-be-vietnam-pro), sans-serif;
+  --font-display-lg: var(--font-be-vietnam-pro), sans-serif;
+  --font-label-bold: var(--font-be-vietnam-pro), sans-serif;
+  --font-headline-md: var(--font-be-vietnam-pro), sans-serif;
+  --font-mono-data: var(--font-be-vietnam-pro), sans-serif;
+  --font-headline-sm: var(--font-be-vietnam-pro), sans-serif;
+  --font-body-md: var(--font-be-vietnam-pro), sans-serif;
+
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--letter-spacing: -0.01em;
+  --text-body-lg--font-weight: 400;
+
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--letter-spacing: 0.01em;
+  --text-label-sm--font-weight: 500;
+
+  --text-display-lg: 48px;
+  --text-display-lg--line-height: 56px;
+  --text-display-lg--letter-spacing: -0.04em;
+  --text-display-lg--font-weight: 700;
+
+  --text-label-bold: 14px;
+  --text-label-bold--line-height: 20px;
+  --text-label-bold--letter-spacing: 0.02em;
+  --text-label-bold--font-weight: 600;
+
+  --text-headline-md: 32px;
+  --text-headline-md--line-height: 40px;
+  --text-headline-md--letter-spacing: -0.03em;
+  --text-headline-md--font-weight: 700;
+
+  --text-mono-data: 13px;
+  --text-mono-data--line-height: 16px;
+  --text-mono-data--letter-spacing: 0.05em;
+  --text-mono-data--font-weight: 600;
+
+  --text-headline-sm: 24px;
+  --text-headline-sm--line-height: 32px;
+  --text-headline-sm--letter-spacing: -0.02em;
+  --text-headline-sm--font-weight: 600;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--letter-spacing: -0.01em;
+  --text-body-md--font-weight: 400;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+.bg-dark-panel {
+  background-color: #18181B;
+}
+
+.circles-overlay {
+  background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+.concentric-rings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1000px;
+  height: 1000px;
+  background: radial-gradient(circle, transparent 20%, rgba(255, 255, 255, 0.02) 21%, transparent 22%, rgba(255, 255, 255, 0.02) 40%, transparent 41%, rgba(255, 255, 255, 0.01) 60%, transparent 61%);
+  pointer-events: none;
+}
+
+.orange-magenta-gradient {
+  background: linear-gradient(135deg, #FF5722 0%, #D81B60 100%);
+}
+
+.glass-effect {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
