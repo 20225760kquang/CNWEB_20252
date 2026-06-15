@@ -14,8 +14,10 @@ const getPageTitle = (pathname: string, t: any) => {
   if (pathname.startsWith("/dashboard/statistics")) return t('common.statisticsTitle');
   if (pathname.startsWith("/dashboard/live")) return t('common.liveTitle');
   if (pathname.startsWith("/dashboard/playback")) return t('common.playbackTitle');
+  if (pathname.startsWith("/dashboard/snapshots")) return t('common.snapshotsTitle');
   if (pathname.startsWith("/dashboard/storage")) return t('common.storageTitle');
   if (pathname.startsWith("/dashboard/settings")) return t('common.settingsTitle');
+  if (pathname.startsWith("/dashboard/help")) return t('common.helpTitle');
   if (pathname.startsWith("/dashboard/admin")) return t('common.adminTitle');
   if (pathname.startsWith("/dashboard/events")) return t('common.events');
   return "cam.ai";
